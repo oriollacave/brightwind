@@ -629,10 +629,10 @@ class Shear:
 
                 w = wspds.iloc[:, i]
                 plot, mean_wspds[i] = dist_by_dir_sector(w, wdir, direction_bin_array=direction_bin_array,
-                                                         aggregation_method='mean', return_data=True)
+                                                         aggregation_method='mean', return_data=True, sectors=sectors)
 
                 plot, count[i] = dist_by_dir_sector(w, wdir, direction_bin_array=direction_bin_array,
-                                                    aggregation_method='count', return_data=True)
+                                                    aggregation_method='count', return_data=True,sectors=sectors)
 
                 if i == 0:
                     mean_wspds_df = mean_wspds[i].copy()
@@ -645,7 +645,7 @@ class Shear:
             wind_rose_plot, wind_rose_dist = dist_by_dir_sector(wspds.iloc[:, 0], wdir,
                                                                 direction_bin_array=direction_bin_array,
                                                                 direction_bin_labels=direction_bin_labels,
-                                                                return_data=True)
+                                                                return_data=True, sectors=sectors)
             if calc_method == 'power_law':
 
                 alpha = mean_wspds_df.apply(Shear._calc_power_law, heights=heights, return_coeff=False, axis=1)
@@ -653,7 +653,7 @@ class Shear:
                 wind_rose_plot, wind_rose_dist = dist_by_dir_sector(wspds.iloc[:, 0], wdir,
                                                                     direction_bin_array=direction_bin_array,
                                                                     direction_bin_labels=direction_bin_labels,
-                                                                    return_data=True)
+                                                                    return_data=True, sectors=sectors)
 
                 self.alpha_count = count_df
                 self._alpha = pd.Series(alpha, name='alpha')
