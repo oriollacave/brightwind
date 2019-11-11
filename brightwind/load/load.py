@@ -527,6 +527,8 @@ class LoadBrightdata:
     def _parse_variables(variables_list):
         var_parsed = None
         if variables_list is not None:
+            if isinstance(variables_list, str):
+                variables_list = [variables_list]
             var_parsed = variables_list[0]
             for variable in variables_list[1:]:
                 var_parsed = var_parsed + ',' + variable
