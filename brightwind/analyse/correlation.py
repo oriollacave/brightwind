@@ -128,8 +128,9 @@ class CorrelBase:
 
 
 class OrdinaryLeastSquares(CorrelBase):
-    """Accepts two DataFrames with timestamps as indexes and averaging period.
-
+    """
+    A wrapper around scipy's ordinary least square's model. Fits a straight line through reference and target data
+    which has the least squared sum of errors.
     :param ref_spd: Series containing reference speed as a column, timestamp as the index.
     :type ref_spd: pandas.Series
     :param target_spd: DataFrame containing target speed as a column, timestamp as the index.
@@ -145,11 +146,47 @@ class OrdinaryLeastSquares(CorrelBase):
     :type averaging_prd: string or pandas.DateOffset
     :param coverage_threshold: Minimum coverage to include for correlation
     :type coverage_threshold: float
-    :param preprocess: To average and check for coverage before correlating
+    :param preprocess: To average and check for coverage before correlating. True by default
     :type preprocess: bool
     :returns: An object representing ordinary least squares fit model
 
+    **Example usage**
+    ::
+        import brightwind as bw
+        #Load data
+        demo_data = bw.load_csv(bw.datasets.demo_data)
 
+        #Create and run an Ordinarly Least Squares model for correlating monthly data
+        ols = bw.Correl.OrdinaryLeastSquares(ref_spd=demo_data.Spd40mN,target_spd=demo_data.Spd60mN,
+                                             coverage_threshold=0.9, averaging_prd='1M')
+        ols.run()
+
+        #R-square metric for the model
+        ols._r2()
+
+        #To synthesize data from the model
+        ols.synthesize()
+
+        #To synthesize using data other than reference data
+        ols.synthesize(demo_data.Spd40mS)
+
+        #To plot the fit and data
+        ols.plot()
+
+        #For seeing the parameters of the model
+        par = ols.params
+        offset = par['offset']
+        slope = par['slope']
+
+        #To look at the averaged data used for correlation
+        ols.data
+
+        #For getting the number of data points used for correlation
+        ols.num_data_pts
+
+        #Turn preprocess to False to not average data and not filter using coverage_threshold
+        ols = bw.Correl.OrdinaryLeastSquares(ref_spd=demo_data.Spd40mN,target_spd=demo_data.Spd60mN, preprocess=False)
+        ols.run()
     """
 
     @staticmethod
@@ -166,7 +203,6 @@ class OrdinaryLeastSquares(CorrelBase):
     def run(self, show_params=True):
         p, res = lstsq(np.nan_to_num(self.data['ref_spd'].values.flatten()[:, np.newaxis] ** [1, 0]),
                        np.nan_to_num(self.data['target_spd'].values.flatten()))[0:2]
-
         self.params = {'slope': p[0], 'offset': p[1]}
         self.params['r2'] = self.get_r2()
         self.params['Num data points'] = self.num_data_pts
@@ -200,6 +236,7 @@ class OrthogonalLeastSquares(CorrelBase):
 
     """
 
+    @staticmethod
     def linear_func(p, x):
         return p[0] * x + p[1]
 
