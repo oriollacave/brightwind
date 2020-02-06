@@ -129,8 +129,14 @@ class CorrelBase:
 
 class OrdinaryLeastSquares(CorrelBase):
     """
-    A wrapper around scipy's ordinary least square's model. Fits a straight line through reference and target data
-    which has the least squared sum of errors.
+    A wrapper around scipy's ordinary least square's model. Fits a straight line through reference and target data and
+    the model is of form: y = mx + c, where,
+    y: target speed,
+    x: reference speed,
+    m: slope,
+    c: intercept,
+    The fit line is chosen by minimising the square of the difference between predicted target speed and actual target
+    speed.
     :param ref_spd: Series containing reference speed as a column, timestamp as the index.
     :type ref_spd: pandas.Series
     :param target_spd: DataFrame containing target speed as a column, timestamp as the index.
@@ -218,22 +224,71 @@ class OrdinaryLeastSquares(CorrelBase):
 
 class OrthogonalLeastSquares(CorrelBase):
     """
-    Accepts two series with timestamps as indexes and averaging period.
+    Orthogonal Least Squares like Ordinary Least Squares fits a straight line through reference and target data and
+    the model is of form: y = mx + c, where,
+    y: target speed,
+    x: reference speed,
+    m: slope,
+    c: intercept,
+    But unlike it, the straight line is chosen by minimising the distance between the data point and the fitted line. As
+    such, it is less susceptible to outliers than Ordinary Least Squares.
 
-    :param ref_spd: Series containing reference speed as a column, timestamp as the index
-    :param target_spd: Series containing target speed as a column, timestamp as the index
+    :param ref_spd: Series containing reference speed as a column, timestamp as the index.
+    :type ref_spd: pandas.Series
+    :param target_spd: DataFrame containing target speed as a column, timestamp as the index.
+    :type target_spd: pandas.Series
     :param averaging_prd: Groups data by the period specified by period.
 
-            * 2T, 2 min for minutely average
-            * Set period to 1D for a daily average, 3D for three hourly average, similarly 5D, 7D, 15D etc.
-            * Set period to 1H for hourly average, 3H for three hourly average and so on for 5H, 6H etc.
-            * Set period to 1MS for monthly average
-            * Set period to 1AS fo annual average
+            - 2T, 2 min for minutely average
+            - Set period to 1D for a daily average, 3D for three hourly average, similarly 5D, 7D, 15D etc.
+            - Set period to 1H for hourly average, 3H for three hourly average and so on for 5H, 6H etc.
+            - Set period to 1MS for monthly average
+            - Set period to 1AS fo annual average
 
+    :type averaging_prd: string or pandas.DateOffset
     :param coverage_threshold: Minimum coverage to include for correlation
-    :param preprocess: To average and check for coverage before correlating
-    :returns: Returns an object representing the model
+    :type coverage_threshold: float
+    :param preprocess: To average and check for coverage before correlating. True by default
+    :type preprocess: bool
+    :returns: An object representing ordinary least squares fit model
 
+    **Example usage**
+    ::
+        import brightwind as bw
+        #Load data
+        demo_data = bw.load_csv(bw.datasets.demo_data)
+
+        #Create and run an Orthogonal Least Squares model for correlating monthly data
+        orls = bw.Correl.OrthogonalLeastSquares(ref_spd=demo_data.Spd40mN,target_spd=demo_data.Spd60mN,
+                                             coverage_threshold=0.9, averaging_prd='1M')
+        orls.run()
+
+        #R-square metric for the model
+        orls._r2()
+
+        #To synthesize data from the model
+        orls.synthesize()
+
+        #To synthesize using data other than reference data
+        orls.synthesize(demo_data.Spd40mS)
+
+        #To plot the fit and data
+        orls.plot()
+
+        #For seeing the parameters of the model
+        par = ols.params
+        offset = par['offset']
+        slope = par['slope']
+
+        #To look at the averaged data used for correlation
+        orls.data
+
+        #For getting the number of data points used for correlation
+        orls.num_data_pts
+
+        #Turn preprocess to False to not average data and not filter using coverage_threshold
+        orls = bw.Correl.OrdinaryLeastSquares(ref_spd=demo_data.Spd40mN,target_spd=demo_data.Spd60mN, preprocess=False)
+        orls.run()
     """
 
     @staticmethod
